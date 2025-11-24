@@ -1,0 +1,2479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threat Modeling Tool</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+      background: #fafafa;
+      min-height: 100vh;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 80px 20px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="none"/><circle cx="50" cy="50" r="40" fill="rgba(255,255,255,0.03)"/></svg>');
+      opacity: 0.3;
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: #ffffff;
+      margin-bottom: 16px;
+      line-height: 1.07;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero p {
+      font-size: 21px;
+      line-height: 1.38;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.9);
+      max-width: 600px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 60px 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 48px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 48px;
+      gap: 12px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d2d2d7;
+      transition: all 0.3s ease;
+    }
+
+    .step.active .step-dot {
+      width: 32px;
+      border-radius: 4px;
+      background: #0071e3;
+    }
+
+    .step.completed .step-dot {
+      background: #34c759;
+    }
+
+    .step-text {
+      font-size: 14px;
+      color: #86868b;
+      font-weight: 500;
+      display: none;
+    }
+
+    .step.active .step-text {
+      display: block;
+      color: #1d1d1f;
+    }
+
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 17px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #1d1d1f;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #d2d2d7;
+      border-radius: 12px;
+      font-size: 17px;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      color: #1d1d1f;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #0071e3;
+      box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+    }
+
+    .input-hint {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #6e6e73;
+      line-height: 1.4;
+    }
+
+    .input-hint a {
+      color: #0071e3;
+      text-decoration: none;
+    }
+
+    .input-hint a:hover {
+      text-decoration: underline;
+    }
+
+    .upload-zone {
+      border: 2px dashed #d2d2d7;
+      border-radius: 18px;
+      padding: 80px 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f5f5f7;
+      margin-bottom: 24px;
+    }
+
+    .upload-zone:hover {
+      border-color: #0071e3;
+      background: #f0f7ff;
+    }
+
+    .upload-zone.dragover {
+      border-color: #0071e3;
+      background: #e6f2ff;
+      border-width: 3px;
+    }
+
+    .upload-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+
+    .upload-zone p {
+      color: #1d1d1f;
+      font-size: 19px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .upload-zone small {
+      color: #6e6e73;
+      font-size: 15px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: #0071e3;
+      color: white;
+      border: none;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #0077ed;
+    }
+
+    .btn-primary:active:not(:disabled) {
+      background: #006edb;
+      transform: scale(0.98);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      border: none;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 12px;
+    }
+
+    .btn-secondary:hover {
+      background: #e8e8ed;
+    }
+
+    .btn-secondary:active {
+      background: #d2d2d7;
+      transform: scale(0.98);
+    }
+
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .preview-section {
+      margin: 24px 0;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #d2d2d7;
+    }
+
+    .preview-image {
+      width: 100%;
+      display: block;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 80px 40px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 24px;
+      border: 3px solid #f5f5f7;
+      border-top: 3px solid #0071e3;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading p {
+      color: #1d1d1f;
+      font-size: 19px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .loading small {
+      color: #6e6e73;
+      font-size: 15px;
+    }
+
+    .results-header {
+      margin-bottom: 48px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 48px;
+      border-radius: 20px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .results-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .results-header h2 {
+      font-size: 48px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .results-header p {
+      font-size: 19px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.5;
+      position: relative;
+      z-index: 1;
+    }
+
+    .report-container {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 48px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    .report-section {
+      padding: 48px 0;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    .report-section:first-child {
+      padding-top: 0;
+    }
+
+    .report-section:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .report-section h3 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+      padding-left: 20px;
+    }
+
+    .report-section h3::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 5px;
+      height: 36px;
+      background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+      border-radius: 3px;
+    }
+
+    .section-icon {
+      font-size: 32px;
+      line-height: 1;
+    }
+
+    .section-description {
+      font-size: 17px;
+      color: #6e6e73;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      padding-left: 20px;
+    }
+
+    .overview-content {
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid #e8ecff;
+      box-shadow: 0 2px 12px rgba(102, 126, 234, 0.05);
+    }
+
+    .overview-content p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #2c2c2e;
+      margin-bottom: 16px;
+    }
+
+    .overview-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    .overview-content strong {
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .components-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .component-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s ease;
+      border: 2px solid #f0f0f0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .component-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .component-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.12);
+      transform: translateY(-4px);
+    }
+
+    .component-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .component-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      gap: 16px;
+    }
+
+    .component-name {
+      font-size: 19px;
+      font-weight: 700;
+      color: #1a1a2e;
+      line-height: 1.3;
+    }
+
+    .component-type {
+      font-size: 14px;
+      color: #667eea;
+      margin-bottom: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .component-description {
+      font-size: 15px;
+      color: #6e6e73;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .exposure-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .exposure-badge.external {
+      background: linear-gradient(135deg, #ff3b30 0%, #c0392b 100%);
+      color: white;
+    }
+
+    .exposure-badge.internal {
+      background: linear-gradient(135deg, #ffcc00 0%, #f39c12 100%);
+      color: #1d1d1f;
+    }
+
+    .exposure-badge.isolated {
+      background: linear-gradient(135deg, #34c759 0%, #27ae60 100%);
+      color: white;
+    }
+
+    .threats-section {
+      margin-top: 24px;
+    }
+
+    .threat-card-detailed {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      border: 2px solid #f0f0f0;
+    }
+
+    .threat-card-detailed::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .threat-card-detailed:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+      transform: translateY(-4px);
+    }
+
+    .threat-card-detailed.critical::before {
+      background: linear-gradient(180deg, #ff3b30 0%, #c0392b 100%);
+    }
+
+    .threat-card-detailed.critical {
+      border-color: #ffebee;
+      background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+    }
+
+    .threat-card-detailed.high::before {
+      background: linear-gradient(180deg, #ff9500 0%, #f57c00 100%);
+    }
+
+    .threat-card-detailed.high {
+      border-color: #fff3e0;
+      background: linear-gradient(135deg, #fffaf0 0%, #ffffff 100%);
+    }
+
+    .threat-card-detailed.medium::before {
+      background: linear-gradient(180deg, #ffcc00 0%, #f9a825 100%);
+    }
+
+    .threat-card-detailed.medium {
+      border-color: #fffde7;
+      background: linear-gradient(135deg, #fffef5 0%, #ffffff 100%);
+    }
+
+    .threat-card-detailed.low::before {
+      background: linear-gradient(180deg, #34c759 0%, #27ae60 100%);
+    }
+
+    .threat-card-detailed.low {
+      border-color: #e8f5e9;
+      background: linear-gradient(135deg, #f1fdf4 0%, #ffffff 100%);
+    }
+
+    .threat-card-header {
+      margin-bottom: 24px;
+    }
+
+    .threat-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .threat-id-badge {
+      font-size: 13px;
+      font-weight: 700;
+      color: #667eea;
+      background: #f0f4ff;
+      padding: 8px 16px;
+      border-radius: 12px;
+      letter-spacing: 0.8px;
+      border: 2px solid #d9e2ff;
+    }
+
+    .threat-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 0;
+      line-height: 1.3;
+    }
+
+    .threat-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin: 24px 0;
+      padding: 28px;
+      background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+      border-radius: 14px;
+      border: 2px solid #e8ecff;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      color: #667eea;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    .detail-value {
+      font-size: 16px;
+      color: #1a1a2e;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .threat-description {
+      font-size: 16px;
+      line-height: 1.7;
+      color: #2c2c2e;
+      margin: 0;
+    }
+
+    .vulnerability-list {
+      margin-top: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .vulnerability-item {
+      background: #ffffff;
+      border-left: 5px solid #ff9500;
+      border-radius: 14px;
+      padding: 24px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 12px rgba(255, 149, 0, 0.08);
+      border: 2px solid #fff3e0;
+      border-left: 5px solid #ff9500;
+    }
+
+    .vulnerability-item:hover {
+      box-shadow: 0 8px 28px rgba(255, 149, 0, 0.15);
+      transform: translateX(4px);
+      border-color: #ffe0b2;
+    }
+
+    .vuln-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .vuln-icon {
+      font-size: 24px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    .vuln-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a2e;
+      line-height: 1.3;
+    }
+
+    .vuln-description {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #2c2c2e;
+      margin: 0;
+      padding-left: 36px;
+    }
+
+    .mitigations-section {
+      margin-top: 24px;
+    }
+
+    .mitigation-priority-group {
+      margin-bottom: 40px;
+    }
+
+    .mitigation-priority-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .priority-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      padding: 18px 24px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+      border: 2px solid #e8ecff;
+    }
+
+    .priority-indicator {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .priority-high .priority-indicator {
+      background: linear-gradient(135deg, #ff3b30 0%, #c0392b 100%);
+    }
+
+    .priority-medium .priority-indicator {
+      background: linear-gradient(135deg, #ffcc00 0%, #f39c12 100%);
+    }
+
+    .priority-low .priority-indicator {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .mitigation-items {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .mitigation-item {
+      display: flex;
+      gap: 20px;
+      padding: 24px;
+      background: #ffffff;
+      border-radius: 14px;
+      transition: all 0.3s ease;
+      border: 2px solid #f0f0f0;
+    }
+
+    .mitigation-item:hover {
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+      border-color: #667eea;
+      box-shadow: 0 6px 24px rgba(102, 126, 234, 0.12);
+      transform: translateX(6px);
+    }
+
+    .mitigation-number {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 17px;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    }
+
+    .mitigation-content {
+      flex: 1;
+    }
+
+    .mitigation-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .mitigation-description {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #6e6e73;
+      margin: 0;
+    }
+
+    .compliance-content {
+      margin-top: 24px;
+    }
+
+    .compliance-content p {
+      font-size: 16px;
+      line-height: 1.8;
+      color: #2c2c2e;
+      margin-bottom: 16px;
+    }
+
+    .compliance-content strong {
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, #e8e8e8 50%, transparent 100%);
+      margin: 48px 0;
+    }
+
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .metadata-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 28px;
+      border-radius: 16px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metadata-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+      transition: opacity 0.3s;
+      opacity: 0;
+    }
+
+    .metadata-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.35);
+    }
+
+    .metadata-card:hover::before {
+      opacity: 1;
+    }
+
+    .metadata-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .metadata-value {
+      font-size: 32px;
+      color: #ffffff;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .report-container {
+      background: #ffffff;
+    }
+
+    .report-section {
+      padding: 40px 0;
+      border-bottom: 1px solid #d2d2d7;
+    }
+
+    .report-section:last-child {
+      border-bottom: none;
+    }
+
+    .report-section h3 {
+      font-size: 32px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .report-section h4 {
+      font-size: 21px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin: 32px 0 16px 0;
+    }
+
+    .report-section p {
+      font-size: 17px;
+      line-height: 1.47;
+      color: #1d1d1f;
+      margin-bottom: 16px;
+    }
+
+    .report-section ul, .report-section ol {
+      margin: 16px 0 16px 24px;
+    }
+
+    .report-section li {
+      font-size: 17px;
+      line-height: 1.47;
+      color: #1d1d1f;
+      margin-bottom: 12px;
+      padding-left: 8px;
+    }
+
+    .threat-card {
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 16px;
+      border: 1px solid #d2d2d7;
+      transition: all 0.2s ease;
+    }
+
+    .threat-card:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .threat-card.critical {
+      border-left: 4px solid #ff3b30;
+      background: #fff5f5;
+    }
+
+    .threat-card.high {
+      border-left: 4px solid #ff9500;
+      background: #fff9f0;
+    }
+
+    .threat-card.medium {
+      border-left: 4px solid #ffcc00;
+      background: #fffef0;
+    }
+
+    .threat-card.low {
+      border-left: 4px solid #34c759;
+      background: #f0fff4;
+    }
+
+    .threat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .threat-id {
+      font-size: 19px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .risk-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .risk-badge.critical {
+      background: #ff3b30;
+      color: white;
+    }
+
+    .risk-badge.high {
+      background: #ff9500;
+      color: white;
+    }
+
+    .risk-badge.medium {
+      background: #ffcc00;
+      color: #1d1d1f;
+    }
+
+    .risk-badge.low {
+      background: #34c759;
+      color: white;
+    }
+
+    .mitigation-card {
+      background: #f5f5f7;
+      border-radius: 14px;
+      padding: 24px;
+      margin: 16px 0;
+      border-left: 4px solid #0071e3;
+    }
+
+    .mitigation-card h5 {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 12px;
+    }
+
+    .component-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      margin: 4px 4px 4px 0;
+      border: 1px solid #d2d2d7;
+    }
+
+    .components-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .component-card {
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s ease;
+      border: 2px solid #e8ecff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .component-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .component-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+      transform: translateY(-4px);
+    }
+
+    .component-card:hover::before {
+      opacity: 1;
+    }
+
+    .component-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+
+    .component-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .component-type {
+      font-size: 14px;
+      color: #6e6e73;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .component-description {
+      font-size: 15px;
+      color: #1d1d1f;
+      line-height: 1.4;
+      margin: 0;
+    }
+
+    .exposure-badge {
+      padding: 4px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .exposure-badge.external {
+      background: #ff3b30;
+      color: white;
+    }
+
+    .exposure-badge.internal {
+      background: #ffcc00;
+      color: #1d1d1f;
+    }
+
+    .exposure-badge.isolated {
+      background: #34c759;
+      color: white;
+    }
+
+    .threat-card-detailed {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .threat-card-detailed::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .threat-card-detailed:hover {
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+      transform: translateX(4px);
+    }
+
+    .threat-card-detailed.critical::after {
+      background: linear-gradient(180deg, #ff3b30 0%, #d32f2f 100%);
+    }
+
+    .threat-card-detailed.high::after {
+      background: linear-gradient(180deg, #ff9500 0%, #f57c00 100%);
+    }
+
+    .threat-card-detailed.medium::after {
+      background: linear-gradient(180deg, #ffcc00 0%, #f9a825 100%);
+    }
+
+    .threat-card-detailed.low::after {
+      background: linear-gradient(180deg, #34c759 0%, #2e7d32 100%);
+    }
+
+    .threat-card-detailed.critical {
+      background: linear-gradient(135deg, #fff5f5 0%, #ffffff 100%);
+      border: 2px solid #ffe8e8;
+    }
+
+    .threat-card-detailed.high {
+      background: linear-gradient(135deg, #fff9f0 0%, #ffffff 100%);
+      border: 2px solid #fff3e0;
+    }
+
+    .threat-card-detailed.medium {
+      background: linear-gradient(135deg, #fffef0 0%, #ffffff 100%);
+      border: 2px solid #fffde7;
+    }
+
+    .threat-card-detailed.low {
+      background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+      border: 2px solid #e8f5e9;
+    }
+
+    .threat-card-header {
+      margin-bottom: 20px;
+    }
+
+    .threat-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .threat-id-badge {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6e6e73;
+      background: #f5f5f7;
+      padding: 6px 12px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .threat-name {
+      font-size: 21px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin: 0;
+    }
+
+    .threat-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 24px 0;
+      padding: 24px;
+      background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+      border-radius: 14px;
+      border: 2px solid #e8ecff;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .detail-label {
+      font-size: 11px;
+      color: #667eea;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .detail-value {
+      font-size: 15px;
+      color: #1d1d1f;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .threat-description {
+      font-size: 15px;
+      line-height: 1.47;
+      color: #1d1d1f;
+      margin: 16px 0 0 0;
+    }
+
+    .vulnerability-list {
+      margin-top: 24px;
+    }
+
+    .vulnerability-item {
+      background: #fff9f0;
+      border-left: 4px solid #ff9500;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .vulnerability-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .vuln-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .vuln-icon {
+      font-size: 20px;
+    }
+
+    .vuln-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1d1d1f;
+    }
+
+    .vuln-description {
+      font-size: 15px;
+      line-height: 1.47;
+      color: #1d1d1f;
+      margin: 0;
+      padding-left: 32px;
+    }
+
+    .mitigation-priority-group {
+      margin-bottom: 32px;
+    }
+
+    .priority-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 19px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #d2d2d7;
+    }
+
+    .priority-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .priority-high .priority-indicator {
+      background: #ff3b30;
+    }
+
+    .priority-medium .priority-indicator {
+      background: #ffcc00;
+    }
+
+    .priority-low .priority-indicator {
+      background: #0071e3;
+    }
+
+    .mitigation-items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mitigation-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: #f5f5f7;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .mitigation-item:hover {
+      background: #e8e8ed;
+    }
+
+    .mitigation-number {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      background: #0071e3;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .mitigation-content {
+      flex: 1;
+    }
+
+    .mitigation-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1d1d1f;
+      margin-bottom: 4px;
+    }
+
+    .mitigation-description {
+      font-size: 15px;
+      line-height: 1.47;
+      color: #6e6e73;
+      margin: 0;
+    }
+
+    .overview-content {
+      background: #f5f5f7;
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 16px;
+    }
+
+    .compliance-content {
+      margin-top: 16px;
+    }
+
+    .error {
+      background: #fff5f5;
+      border: 1px solid #ff3b30;
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: #ff3b30;
+      margin-top: 16px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .divider {
+      height: 1px;
+      background: #d2d2d7;
+      margin: 40px 0;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 40px;
+      }
+
+      .hero p {
+        font-size: 19px;
+      }
+
+      .card {
+        padding: 32px 24px;
+      }
+
+      .results-header h2 {
+        font-size: 32px;
+      }
+
+      .report-section h3 {
+        font-size: 24px;
+      }
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .hero, .btn-primary, .btn-secondary, .export-grid, .step-indicator {
+        display: none;
+      }
+
+      .card {
+        box-shadow: none;
+        border: none;
+        page-break-inside: avoid;
+      }
+    }
+
+    .section-icon {
+      font-size: 32px;
+      line-height: 1;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #f5f5f7;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #1d1d1f;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #34c759;
+    }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>Threat Modeling</h1>
+    <p>Advanced AI-powered security analysis for your infrastructure architecture</p>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="step-indicator">
+        <div class="step active" id="step1">
+          <div class="step-dot"></div>
+          <span class="step-text">Setup</span>
+        </div>
+        <div class="step" id="step2">
+          <div class="step-dot"></div>
+          <span class="step-text">Upload</span>
+        </div>
+        <div class="step" id="step3">
+          <div class="step-dot"></div>
+          <span class="step-text">Analysis</span>
+        </div>
+      </div>
+
+      <div id="setupSection">
+        <div class="input-group">
+          <label for="apiKey">Anthropic API Key</label>
+          <input 
+            type="password" 
+            id="apiKey" 
+            placeholder="sk-ant-api03-..."
+            autocomplete="off"
+          />
+          <div class="input-hint">
+            Get your API key from <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="backendUrl">Backend API Endpoint</label>
+          <input 
+            type="text" 
+            id="backendUrl" 
+            placeholder="http://localhost:3000/api/analyze"
+            value="http://localhost:3000/api/analyze"
+            autocomplete="off"
+          />
+          <div class="input-hint">
+            Your Node.js backend server endpoint
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="continueToUpload()">Continue</button>
+      </div>
+
+      <div id="uploadSection" class="hidden">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📊</div>
+          <p>Upload architecture diagram</p>
+          <small>PNG, JPG, JPEG, or PDF up to 10MB</small>
+          <input 
+            type="file" 
+            id="fileInput" 
+            accept="image/png,image/jpeg,image/jpg,application/pdf" 
+            class="hidden"
+            onchange="handleFileSelect(event)"
+          />
+        </div>
+
+        <div id="previewSection" class="preview-section hidden">
+          <img id="previewImage" class="preview-image" alt="Diagram preview" />
+        </div>
+
+        <button class="btn-primary" id="analyzeBtn" onclick="analyzeImage()" disabled>
+          Analyze Threats
+        </button>
+      </div>
+
+      <div id="loadingSection" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Analyzing architecture</p>
+        <small>This may take up to a minute</small>
+      </div>
+
+      <div id="errorSection" class="error hidden"></div>
+    </div>
+
+    <div class="card hidden" id="resultsSection">
+      <div class="results-header">
+        <h2>Security Analysis Report</h2>
+        <p>Comprehensive threat assessment generated by Claude AI</p>
+      </div>
+
+      <div class="metadata-grid">
+        <div class="metadata-card">
+          <div class="metadata-label">Date</div>
+          <div class="metadata-value" id="analysisDate"></div>
+        </div>
+        <div class="metadata-card">
+          <div class="metadata-label">Status</div>
+          <div class="metadata-value">
+            <span class="status-indicator">
+              <span class="status-dot"></span>
+              Complete
+            </span>
+          </div>
+        </div>
+        <div class="metadata-card">
+          <div class="metadata-label">Model</div>
+          <div class="metadata-value" style="font-size: 21px;">Claude Sonnet 4</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div id="threatReport" class="report-container"></div>
+
+      <div class="divider"></div>
+
+      <div class="export-grid">
+        <button class="btn-secondary" onclick="exportPDF()">Export PDF</button>
+        <button class="btn-secondary" onclick="exportHTML()">Export HTML</button>
+        <button class="btn-secondary" onclick="exportMarkdown()">Export Markdown</button>
+        <button class="btn-secondary" onclick="exportJSON()">Export JSON</button>
+      </div>
+
+      <button class="btn-primary" onclick="resetTool()" style="margin-top: 24px;">New Analysis</button>
+    </div>
+  </div>
+
+  <script>
+    let selectedFile = null;
+    let imageBase64 = '';
+    let rawReportText = '';
+    let analysisTimestamp = '';
+
+    const uploadZone = document.getElementById('uploadZone');
+    
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFile(files[0]);
+      }
+    });
+
+    function continueToUpload() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const backendUrl = document.getElementById('backendUrl').value.trim();
+
+      if (!apiKey) {
+        showError('Please enter your Anthropic API key');
+        return;
+      }
+
+      if (!backendUrl) {
+        showError('Please enter your backend API endpoint');
+        return;
+      }
+
+      document.getElementById('setupSection').classList.add('hidden');
+      document.getElementById('uploadSection').classList.remove('hidden');
+      updateSteps(2);
+      hideError();
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        handleFile(file);
+      }
+    }
+
+    function handleFile(file) {
+      if (!file.type.match('image/(png|jpeg|jpg)') && file.type !== 'application/pdf') {
+        showError('Please upload a PNG, JPEG, or PDF file');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        showError('File size must be less than 10MB');
+        return;
+      }
+
+      selectedFile = file;
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (file.type === 'application/pdf') {
+          // For PDF, show a placeholder preview
+          const previewSection = document.getElementById('previewSection');
+          previewSection.innerHTML = `
+            <div style="background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%); 
+                        border-radius: 16px; 
+                        padding: 60px; 
+                        text-align: center;
+                        border: 2px solid #d9e2ff;">
+              <div style="font-size: 64px; margin-bottom: 20px;">📄</div>
+              <div style="font-size: 19px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px;">
+                ${file.name}
+              </div>
+              <div style="font-size: 15px; color: #6e6e73;">
+                PDF Document Ready for Analysis
+              </div>
+            </div>
+          `;
+          previewSection.classList.remove('hidden');
+          imageBase64 = e.target.result.split(',')[1];
+        } else {
+          // For images, show the image preview
+          const img = document.getElementById('previewImage');
+          img.src = e.target.result;
+          document.getElementById('previewSection').innerHTML = `<img id="previewImage" class="preview-image" src="${e.target.result}" alt="Diagram preview" />`;
+          document.getElementById('previewSection').classList.remove('hidden');
+          imageBase64 = e.target.result.split(',')[1];
+        }
+        
+        document.getElementById('analyzeBtn').disabled = false;
+        hideError();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function analyzeImage() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const backendUrl = document.getElementById('backendUrl').value.trim();
+
+      if (!imageBase64) {
+        showError('Please upload an image first');
+        return;
+      }
+
+      document.getElementById('uploadSection').classList.add('hidden');
+      document.getElementById('loadingSection').classList.remove('hidden');
+      updateSteps(3);
+      hideError();
+
+      try {
+        const mediaType = selectedFile.type;
+        
+        const response = await fetch(backendUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            apiKey: apiKey,
+            imageBase64: imageBase64,
+            mediaType: mediaType
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Backend Error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        rawReportText = data.content
+          .filter(item => item.type === 'text')
+          .map(item => item.text)
+          .join('\n\n');
+
+        analysisTimestamp = new Date().toLocaleString();
+        displayResults(rawReportText);
+      } catch (error) {
+        console.error('Analysis error:', error);
+        showError(`Analysis failed: ${error.message}`);
+        document.getElementById('loadingSection').classList.add('hidden');
+        document.getElementById('uploadSection').classList.remove('hidden');
+        updateSteps(2);
+      }
+    }
+
+    function displayResults(report) {
+      document.getElementById('loadingSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.remove('hidden');
+      
+      const date = new Date();
+      document.getElementById('analysisDate').textContent = date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric'
+      });
+      
+      const reportContainer = document.getElementById('threatReport');
+      reportContainer.innerHTML = formatReport(report);
+    }
+
+    function formatReport(text) {
+      // Parse the report into structured sections
+      const sections = parseReportSections(text);
+      let html = '';
+      
+      sections.forEach(section => {
+        if (section.type === 'overview') {
+          html += formatOverviewSection(section);
+        } else if (section.type === 'components') {
+          html += formatComponentsSection(section);
+        } else if (section.type === 'threats') {
+          html += formatThreatsSection(section);
+        } else if (section.type === 'vulnerabilities') {
+          html += formatVulnerabilitiesSection(section);
+        } else if (section.type === 'mitigations') {
+          html += formatMitigationsSection(section);
+        } else if (section.type === 'compliance') {
+          html += formatComplianceSection(section);
+        } else {
+          html += formatGenericSection(section);
+        }
+      });
+      
+      return html || `<div class="report-section"><p>${text}</p></div>`;
+    }
+
+    function parseReportSections(text) {
+      const sections = [];
+      const lines = text.split('\n');
+      let currentSection = null;
+      let currentContent = [];
+      
+      lines.forEach(line => {
+        line = line.trim();
+        
+        // Detect section headers - multiple formats
+        const headerMatch = line.match(/^#{1,3}\s+(\d+\.\s+)?(.+)$/);
+        const boldHeaderMatch = line.match(/^\*\*([A-Z\s&]+)\*\*$/);
+        const numberedHeaderMatch = line.match(/^(\d+)\.\s+([A-Z\s&]+)$/);
+        
+        if (headerMatch || boldHeaderMatch || numberedHeaderMatch) {
+          // Save previous section
+          if (currentSection) {
+            sections.push({
+              ...currentSection,
+              content: currentContent.join('\n')
+            });
+          }
+          
+          let title = '';
+          if (headerMatch) {
+            title = headerMatch[2].replace(/\*\*/g, '');
+          } else if (boldHeaderMatch) {
+            title = boldHeaderMatch[1];
+          } else if (numberedHeaderMatch) {
+            title = numberedHeaderMatch[2];
+          }
+          
+          const type = detectSectionType(title);
+          currentSection = { title, type };
+          currentContent = [];
+        } else if (line && currentSection) {
+          currentContent.push(line);
+        }
+      });
+      
+      // Save last section
+      if (currentSection) {
+        sections.push({
+          ...currentSection,
+          content: currentContent.join('\n')
+        });
+      }
+      
+      return sections;
+    }
+
+    function detectSectionType(title) {
+      const upper = title.toUpperCase();
+      if (upper.includes('OVERVIEW') || upper.includes('ARCHITECTURE')) return 'overview';
+      if (upper.includes('COMPONENT')) return 'components';
+      if (upper.includes('THREAT') && upper.includes('ANALYSIS')) return 'threats';
+      if (upper.includes('VULNERABILIT') || upper.includes('MISCONFIGURATION')) return 'vulnerabilities';
+      if (upper.includes('MITIGATION') || upper.includes('RECOMMENDATION')) return 'mitigations';
+      if (upper.includes('COMPLIANCE')) return 'compliance';
+      return 'generic';
+    }
+
+    function formatOverviewSection(section) {
+      return `
+        <div class="report-section overview-section">
+          <h3><span class="section-icon">🏗</span> ${section.title}</h3>
+          <div class="section-description">
+            High-level analysis of your architecture design and security posture
+          </div>
+          <div class="executive-summary">
+            <h4>Executive Summary</h4>
+            ${formatContentWithParagraphs(section.content)}
+          </div>
+        </div>
+      `;
+    }
+
+    function formatComponentsSection(section) {
+      const components = extractComponents(section.content);
+      
+      let html = `
+        <div class="report-section">
+          <h3><span class="section-icon">⚙️</span> ${section.title}</h3>
+          <div class="section-description">
+            Detailed breakdown of all identified architecture components and their security exposure
+          </div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-value">${components.length}</span>
+              <span class="stat-label">Components</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${components.filter(c => c.exposure === 'external').length}</span>
+              <span class="stat-label">External</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${components.filter(c => c.exposure === 'internal').length}</span>
+              <span class="stat-label">Internal</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${components.filter(c => c.exposure === 'isolated').length}</span>
+              <span class="stat-label">Isolated</span>
+            </div>
+          </div>
+          <div class="components-grid">
+      `;
+      
+      components.forEach(comp => {
+        html += `
+          <div class="component-card">
+            <div class="component-header">
+              <span class="component-name">${comp.name}</span>
+              <span class="exposure-badge ${comp.exposure}">${comp.exposure}</span>
+            </div>
+            <div class="component-type">${comp.type}</div>
+            ${comp.description ? `<p class="component-description">${comp.description}</p>` : ''}
+          </div>
+        `;
+      });
+      
+      html += `</div></div>`;
+      return html;
+    }
+
+    function formatThreatsSection(section) {
+      const threats = extractThreats(section.content);
+      
+      const criticalCount = threats.filter(t => t.risk === 'critical').length;
+      const highCount = threats.filter(t => t.risk === 'high').length;
+      const mediumCount = threats.filter(t => t.risk === 'medium').length;
+      const lowCount = threats.filter(t => t.risk === 'low').length;
+      
+      let html = `
+        <div class="report-section threats-section">
+          <h3><span class="section-icon">⚠️</span> ${section.title}</h3>
+          <div class="section-description">
+            Comprehensive threat assessment based on STRIDE methodology and industry best practices
+          </div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-value" style="color: #dc2626;">${criticalCount}</span>
+              <span class="stat-label">Critical</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" style="color: #ea580c;">${highCount}</span>
+              <span class="stat-label">High</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" style="color: #f59e0b;">${mediumCount}</span>
+              <span class="stat-label">Medium</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" style="color: #10b981;">${lowCount}</span>
+              <span class="stat-label">Low</span>
+            </div>
+          </div>
+      `;
+      
+      threats.forEach(threat => {
+        html += `
+          <div class="threat-card-detailed ${threat.risk}">
+            <div class="threat-card-header">
+              <div class="threat-title-row">
+                <span class="threat-id-badge">${threat.id}</span>
+                <span class="risk-badge ${threat.risk}">${threat.risk}</span>
+              </div>
+              <h4 class="threat-name">${threat.name || 'Security Threat'}</h4>
+            </div>
+            
+            <div class="threat-details-grid">
+              ${threat.vector ? `
+                <div class="detail-item">
+                  <div class="detail-label">Attack Vector</div>
+                  <div class="detail-value">${threat.vector}</div>
+                </div>
+              ` : ''}
+              
+              ${threat.impact ? `
+                <div class="detail-item">
+                  <div class="detail-label">Potential Impact</div>
+                  <div class="detail-value">${threat.impact}</div>
+                </div>
+              ` : ''}
+              
+              ${threat.likelihood ? `
+                <div class="detail-item">
+                  <div class="detail-label">Likelihood</div>
+                  <div class="detail-value">${threat.likelihood}</div>
+                </div>
+              ` : ''}
+            </div>
+            
+            ${threat.description ? `<p class="threat-description">${threat.description}</p>` : ''}
+          </div>
+        `;
+      });
+      
+      html += `</div>`;
+      return html;
+    }
+
+    function formatVulnerabilitiesSection(section) {
+      const vulnerabilities = extractVulnerabilities(section.content);
+      
+      let html = `
+        <div class="report-section">
+          <h3><span class="section-icon">🔓</span> ${section.title}</h3>
+          <div class="section-description">
+            Identified security gaps, misconfigurations, and vulnerabilities requiring immediate attention
+          </div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-value">${vulnerabilities.length}</span>
+              <span class="stat-label">Total Issues</span>
+            </div>
+          </div>
+          <div class="vulnerability-list">
+      `;
+      
+      vulnerabilities.forEach(vuln => {
+        html += `
+          <div class="vulnerability-item">
+            <div class="vuln-header">
+              <span class="vuln-icon">⚠️</span>
+              <span class="vuln-title">${vuln.title}</span>
+            </div>
+            <p class="vuln-description">${vuln.description}</p>
+          </div>
+        `;
+      });
+      
+      html += `</div></div>`;
+      return html;
+    }
+
+    function formatMitigationsSection(section) {
+      const mitigations = extractMitigations(section.content);
+      
+      const totalMitigations = mitigations.high.length + mitigations.medium.length + mitigations.low.length;
+      
+      let html = `
+        <div class="report-section mitigations-section">
+          <h3><span class="section-icon">✅</span> ${section.title}</h3>
+          <div class="section-description">
+            Prioritized action plan to remediate identified threats and strengthen security posture
+          </div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <span class="stat-value">${totalMitigations}</span>
+              <span class="stat-label">Total Actions</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${mitigations.high.length}</span>
+              <span class="stat-label">High Priority</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${mitigations.medium.length}</span>
+              <span class="stat-label">Medium Priority</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${mitigations.low.length}</span>
+              <span class="stat-label">Low Priority</span>
+            </div>
+          </div>
+      `;
+      
+      Object.keys(mitigations).forEach(priority => {
+        if (mitigations[priority].length > 0) {
+          html += `
+            <div class="mitigation-priority-group">
+              <h4 class="priority-header priority-${priority}">
+                <span class="priority-indicator"></span>
+                ${priority.charAt(0).toUpperCase() + priority.slice(1)} Priority
+              </h4>
+              <div class="mitigation-items">
+          `;
+          
+          mitigations[priority].forEach(mit => {
+            html += `
+              <div class="mitigation-item">
+                <div class="mitigation-number">${mit.number}</div>
+                <div class="mitigation-content">
+                  <div class="mitigation-title">${mit.title}</div>
+                  ${mit.description ? `<p class="mitigation-description">${mit.description}</p>` : ''}
+                </div>
+              </div>
+            `;
+          });
+          
+          html += `</div></div>`;
+        }
+      });
+      
+      html += `</div>`;
+      return html;
+    }
+
+    function formatComplianceSection(section) {
+      return `
+        <div class="report-section">
+          <h3><span class="section-icon">📜</span> ${section.title}</h3>
+          <div class="compliance-content">
+            ${formatContentWithParagraphs(section.content)}
+          </div>
+        </div>
+      `;
+    }
+
+    function formatGenericSection(section) {
+      return `
+        <div class="report-section">
+          <h3><span class="section-icon">📌</span> ${section.title}</h3>
+          ${formatContentWithParagraphs(section.content)}
+        </div>
+      `;
+    }
+
+    function extractComponents(content) {
+      const components = [];
+      const lines = content.split('\n');
+      let currentComp = null;
+      
+      lines.forEach(line => {
+        if (line.match(/^-\s+\*\*(.+?)\*\*/)) {
+          if (currentComp) components.push(currentComp);
+          const name = line.match(/\*\*(.+?)\*\*/)[1];
+          currentComp = { name, type: '', exposure: 'internal', description: '' };
+        } else if (currentComp) {
+          if (line.includes('Type:')) {
+            currentComp.type = line.replace(/.*Type:\s*/i, '').replace(/\*\*/g, '');
+          } else if (line.includes('Exposure:')) {
+            const exp = line.replace(/.*Exposure:\s*/i, '').replace(/\*\*/g, '').toLowerCase();
+            currentComp.exposure = exp.includes('external') ? 'external' : exp.includes('internal') ? 'internal' : 'isolated';
+          } else if (line.trim() && !line.includes(':')) {
+            currentComp.description += line.trim() + ' ';
+          }
+        }
+      });
+      
+      if (currentComp) components.push(currentComp);
+      return components;
+    }
+
+    function extractThreats(content) {
+      const threats = [];
+      const lines = content.split('\n');
+      let currentThreat = null;
+      
+      lines.forEach(line => {
+        // Start new threat
+        if (line.match(/^-\s+\*\*Threat ID/i) || line.match(/Threat ID[:\s]+T-\d+/i)) {
+          if (currentThreat && (currentThreat.vector || currentThreat.impact)) {
+            threats.push(currentThreat);
+          }
+          
+          const idMatch = line.match(/T-\d+/i);
+          currentThreat = {
+            id: idMatch ? idMatch[0] : `T-${threats.length + 1}`.padStart(5, '0'),
+            name: '',
+            vector: '',
+            impact: '',
+            likelihood: '',
+            risk: 'medium',
+            description: ''
+          };
+        } 
+        // Extract threat details
+        else if (currentThreat) {
+          if (line.match(/Attack Vector/i)) {
+            currentThreat.vector = line.replace(/.*Attack Vector[:\s]*/i, '').replace(/\*\*/g, '').trim();
+          } else if (line.match(/^\s*Impact/i)) {
+            currentThreat.impact = line.replace(/.*Impact[:\s]*/i, '').replace(/\*\*/g, '').trim();
+          } else if (line.match(/Likelihood/i)) {
+            currentThreat.likelihood = line.replace(/.*Likelihood[:\s]*/i, '').replace(/\*\*/g, '').trim();
+          } else if (line.match(/Risk Score/i)) {
+            const riskMatch = line.match(/(Critical|High|Medium|Low)/i);
+            if (riskMatch) currentThreat.risk = riskMatch[1].toLowerCase();
+          }
+        }
+      });
+      
+      if (currentThreat && (currentThreat.vector || currentThreat.impact)) {
+        threats.push(currentThreat);
+      }
+      
+      // If no structured threats found, create generic ones from bullet points
+      if (threats.length === 0) {
+        lines.forEach(line => {
+          if (line.match(/^[-•]\s+\*\*(.+?)\*\*/)) {
+            const name = line.match(/\*\*(.+?)\*\*/)[1];
+            const description = line.replace(/^[-•]\s+\*\*.*?\*\*:?\s*/, '');
+            threats.push({
+              id: `T-${threats.length + 1}`.padStart(5, '0'),
+              name: name,
+              vector: description,
+              impact: '',
+              likelihood: '',
+              risk: 'medium',
+              description: ''
+            });
+          }
+        });
+      }
+      
+      return threats;
+    }
+
+    function extractVulnerabilities(content) {
+      const vulnerabilities = [];
+      const lines = content.split('\n');
+      
+      lines.forEach(line => {
+        if (line.match(/^-\s+\*\*(.+?)\*\*/)) {
+          const title = line.match(/\*\*(.+?)\*\*/)[1];
+          const description = line.replace(/^-\s+\*\*.*?\*\*:?\s*/, '');
+          vulnerabilities.push({ title, description });
+        } else if (line.match(/^-\s+(.+)/)) {
+          vulnerabilities.push({ 
+            title: line.replace(/^-\s+/, '').substring(0, 50), 
+            description: line.replace(/^-\s+/, '') 
+          });
+        }
+      });
+      
+      return vulnerabilities;
+    }
+
+    function extractMitigations(content) {
+      const mitigations = { high: [], medium: [], low: [] };
+      const lines = content.split('\n');
+      let currentPriority = 'medium';
+      let counter = 1;
+      
+      lines.forEach(line => {
+        if (line.match(/Quick wins|Immediate|Critical/i)) {
+          currentPriority = 'high';
+          counter = 1;
+        } else if (line.match(/Short-term|Medium/i)) {
+          currentPriority = 'medium';
+          counter = 1;
+        } else if (line.match(/Long-term|Strategic/i)) {
+          currentPriority = 'low';
+          counter = 1;
+        } else if (line.match(/^-\s+(.+)/)) {
+          const text = line.replace(/^-\s+/, '').replace(/\*\*/g, '');
+          const colonIndex = text.indexOf(':');
+          
+          if (colonIndex > 0 && colonIndex < 100) {
+            mitigations[currentPriority].push({
+              number: counter++,
+              title: text.substring(0, colonIndex),
+              description: text.substring(colonIndex + 1).trim()
+            });
+          } else {
+            mitigations[currentPriority].push({
+              number: counter++,
+              title: text,
+              description: ''
+            });
+          }
+        }
+      });
+      
+      return mitigations;
+    }
+
+    function formatContentWithParagraphs(content) {
+      return content.split('\n')
+        .filter(line => line.trim())
+        .map(line => {
+          line = line.trim();
+          if (line.startsWith('-') || line.startsWith('•')) {
+            return `<li>${line.substring(1).trim().replace(/\*\*/g, '')}</li>`;
+          } else {
+            return `<p>${line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</p>`;
+          }
+        })
+        .join('');
+    }
+
+    function formatLine(line) {
+      if (line.startsWith('-') || line.startsWith('•') || line.match(/^\d+\./)) {
+        return `<li>${line.replace(/^[-•]\s*/, '').replace(/^\d+\.\s*/, '').replace(/\*\*/g, '')}</li>`;
+      }
+      else if (line.includes('**')) {
+        return `<p>${line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</p>`;
+      }
+      else {
+        return `<p>${line}</p>`;
+      }
+    }
+
+    function formatThreatCard(content) {
+      const riskMatch = content.match(/Risk Score[:\s]+\*?\*?(Critical|High|Medium|Low)\*?\*?/i);
+      const risk = riskMatch ? riskMatch[1].toLowerCase() : 'medium';
+      
+      const idMatch = content.match(/Threat ID[:\s]+\*?\*?([T-\d]+|[A-Z0-9-]+)\*?\*?/i);
+      const threatId = idMatch ? idMatch[1] : 'Threat Detected';
+      
+      const contentHtml = content
+        .split('\n')
+        .map(line => {
+          if (line.startsWith('-')) {
+            return `<li>${line.substring(1).trim().replace(/\*\*/g, '')}</li>`;
+          }
+          return `<p>${line.replace(/\*\*/g, '')}</p>`;
+        })
+        .join('');
+      
+      return `
+        <div class="threat-card ${risk}">
+          <div class="threat-header">
+            <span class="threat-id">${threatId}</span>
+            <span class="risk-badge ${risk}">${risk}</span>
+          </div>
+          ${contentHtml}
+        </div>`;
+    }
+
+    function getSectionIcon(title) {
+      const icons = {
+        'ARCHITECTURE': '🏗',
+        'OVERVIEW': '📋',
+        'COMPONENTS': '⚙️',
+        'IDENTIFIED': '🔍',
+        'THREAT': '⚠️',
+        'VULNERABILITIES': '🔓',
+        'MISCONFIGURATIONS': '⚙️',
+        'MITIGATIONS': '✅',
+        'RECOMMENDATIONS': '💡',
+        'COMPLIANCE': '📜',
+        'SUMMARY': '📊'
+      };
+      
+      for (let key in icons) {
+        if (title.toUpperCase().includes(key)) return icons[key];
+      }
+      return '📌';
+    }
+
+    function exportPDF() {
+      window.print();
+    }
+
+    function exportHTML() {
+      const reportContent = document.getElementById('threatReport').innerHTML;
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Security Analysis Report - ${analysisTimestamp}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; max-width: 1120px; margin: 0 auto; padding: 60px 40px; background: #ffffff; }
+    h2 { font-size: 48px; font-weight: 600; color: #1d1d1f; margin-bottom: 40px; }
+    h3 { font-size: 32px; font-weight: 600; color: #1d1d1f; margin: 40px 0 24px 0; }
+    .threat-card { background: white; border-radius: 14px; padding: 24px; margin: 16px 0; border: 1px solid #d2d2d7; }
+    .threat-card.critical { border-left: 4px solid #ff3b30; background: #fff5f5; }
+    .threat-card.high { border-left: 4px solid #ff9500; background: #fff9f0; }
+    .threat-card.medium { border-left: 4px solid #ffcc00; background: #fffef0; }
+    .threat-card.low { border-left: 4px solid #34c759; background: #f0fff4; }
+    .risk-badge { padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; text-transform: uppercase; }
+    p { font-size: 17px; line-height: 1.47; color: #1d1d1f; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <h2>Security Analysis Report</h2>
+  <p><strong>Analysis Date:</strong> ${analysisTimestamp}</p>
+  <p><strong>Model:</strong> Claude Sonnet 4</p>
+  ${reportContent}
+  <p style="margin-top: 60px; text-align: center; color: #6e6e73; font-size: 15px;">Generated by Threat Modeling Tool</p>
+</body>
+</html>`;
+      
+      downloadFile(htmlContent, `security-analysis-${Date.now()}.html`, 'text/html');
+    }
+
+    function exportMarkdown() {
+      const markdown = `# Security Analysis Report
+
+**Analysis Date:** ${analysisTimestamp}  
+**Model:** Claude Sonnet 4  
+**Status:** Complete
+
+---
+
+${rawReportText}
+
+---
+*Generated by Threat Modeling Tool*`;
+      
+      downloadFile(markdown, `security-analysis-${Date.now()}.md`, 'text/markdown');
+    }
+
+    function exportJSON() {
+      const jsonData = {
+        metadata: {
+          analysisDate: analysisTimestamp,
+          model: 'claude-sonnet-4-20250514',
+          imageFormat: selectedFile.type,
+          status: 'complete'
+        },
+        report: rawReportText,
+        timestamp: new Date().toISOString()
+      };
+      
+      downloadFile(JSON.stringify(jsonData, null, 2), `security-analysis-${Date.now()}.json`, 'application/json');
+    }
+
+    function downloadFile(content, filename, type) {
+      const blob = new Blob([content], { type: type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function resetTool() {
+      selectedFile = null;
+      imageBase64 = '';
+      rawReportText = '';
+      document.getElementById('fileInput').value = '';
+      document.getElementById('previewSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('setupSection').classList.remove('hidden');
+      document.getElementById('analyzeBtn').disabled = true;
+      updateSteps(1);
+      hideError();
+    }
+
+    function updateSteps(activeStep) {
+      for (let i = 1; i <= 3; i++) {
+        const step = document.getElementById(`step${i}`);
+        step.classList.remove('active', 'completed');
+        
+        if (i < activeStep) {
+          step.classList.add('completed');
+        } else if (i === activeStep) {
+          step.classList.add('active');
+        }
+      }
+    }
+
+    function showError(message) {
+      const errorSection = document.getElementById('errorSection');
+      errorSection.textContent = message;
+      errorSection.classList.remove('hidden');
+    }
+
+    function hideError() {
+      document.getElementById('errorSection').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
