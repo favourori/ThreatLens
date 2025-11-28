@@ -4,18 +4,49 @@ const cors = require('cors');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const app = express();
+
+// Increase timeout to 5 minutes
+app.use((req, res, next) => {
+  req.setTimeout(300000); // 5 minutes
+  res.setTimeout(300000);
+  next();
+});
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Health check
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'Server is running', 
+    timestamp: new Date().toISOString() 
+  });
+});
+
 app.post('/api/analyze', async (req, res) => {
+  // Set longer timeout for this specific route
+  req.setTimeout(300000);
+  res.setTimeout(300000);
+  
   try {
+    console.log('Received analysis request');
+    
     const { apiKey, imageBase64, mediaType } = req.body;
     
+    if (!apiKey || !imageBase64 || !mediaType) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: apiKey, imageBase64, or mediaType' 
+      });
+    }
+    
+    console.log('Creating Anthropic client...');
     const anthropic = new Anthropic({ apiKey });
     
     // Check if it's a PDF
     const isPDF = mediaType === 'application/pdf';
+    console.log(`Processing ${isPDF ? 'PDF' : 'image'}...`);
     
+    console.log('Sending request to Claude API...');
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
@@ -74,20 +105,16 @@ For each threat, use this EXACT format:
 
 List each vulnerability:
 - **[Vulnerability Name]**: [Detailed description of the security issue and potential impact]
-- **[Vulnerability Name]**: [Description]
 
 # 5. MITIGATIONS & RECOMMENDATIONS
 
 **Quick Wins (Immediate Actions):**
 - [Specific actionable mitigation]: [Implementation details]
-- [Specific actionable mitigation]: [Implementation details]
 
 **Short-term Improvements (1-3 months):**
 - [Specific improvement]: [Implementation details]
-- [Specific improvement]: [Implementation details]
 
 **Long-term Strategic Changes:**
-- [Strategic change]: [Implementation details]
 - [Strategic change]: [Implementation details]
 
 # 6. COMPLIANCE CONSIDERATIONS
@@ -103,19 +130,23 @@ Apply STRIDE framework (Spoofing, Tampering, Repudiation, Information Disclosure
       ]
     });
     
+    console.log('Received response from Claude API');
     res.json({ content: message.content });
+    
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error during analysis:', error.message);
+    console.error('Full error:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: error.error?.message || 'Unknown error'
+    });
   }
 });
 
-// Health check endpoint
-app.get('/', (req, res) => {
-  res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
-});
-
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Increase server timeout
+server.timeout = 300000; // 5 minutes
