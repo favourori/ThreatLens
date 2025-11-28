@@ -24,7 +24,7 @@ app.post('/api/analyze', async (req, res) => {
           role: 'user',
           content: [
             {
-              type: isPDF ? 'document' : 'image',  // 'document' for PDF, 'image' for images
+              type: isPDF ? 'document' : 'image',
               source: { 
                 type: 'base64', 
                 media_type: mediaType, 
@@ -105,9 +105,17 @@ Apply STRIDE framework (Spoofing, Tampering, Repudiation, Information Disclosure
     
     res.json({ content: message.content });
   } catch (error) {
+    console.error('Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
