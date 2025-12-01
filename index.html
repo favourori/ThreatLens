@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Threat Modeling Tool</title>
+  <title>ThreatLens</title>
   <style>
     * {
       margin: 0;
@@ -139,6 +139,31 @@
       box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
     }
 
+    .input-group select {
+      width: 100%;
+      padding: 14px 40px 14px 16px;
+      border: 1px solid #d2d2d7;
+      border-radius: 12px;
+      font-size: 17px;
+      transition: all 0.2s ease;
+      background: white url('data:image/svg+xml;charset=UTF-8,<svg width="14" height="8" viewBox="0 0 14 8" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L7 7L13 1" stroke="%23666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>') no-repeat right 16px center;
+      color: #1d1d1f;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    .input-group select:focus {
+      outline: none;
+      border-color: #0071e3;
+      box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+    }
+
+    .input-group select:hover {
+      border-color: #0071e3;
+    }
+
     .input-hint {
       margin-top: 6px;
       font-size: 14px;
@@ -263,6 +288,38 @@
       font-size: 15px;
     }
 
+    .error {
+      background: #fff5f5;
+      border: 1px solid #ff3b30;
+      border-radius: 12px;
+      padding: 16px 20px;
+      color: #ff3b30;
+      margin-top: 16px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .btn-secondary {
+      width: 100%;
+      background: #f5f5f7;
+      color: #1d1d1f;
+      border: none;
+      padding: 16px 24px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 12px;
+    }
+
+    .export-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
     .results-section {
       margin-top: 24px;
     }
@@ -322,51 +379,6 @@
       color: #ffffff;
       font-weight: 700;
       letter-spacing: -0.5px;
-    }
-
-    .report-section {
-      padding: 48px 0;
-      border-bottom: 1px solid #e8e8e8;
-    }
-
-    .report-section h3 {
-      font-size: 36px;
-      font-weight: 700;
-      color: #0f172a;
-      margin-bottom: 24px;
-      letter-spacing: -1px;
-    }
-
-    .error {
-      background: #fff5f5;
-      border: 1px solid #ff3b30;
-      border-radius: 12px;
-      padding: 16px 20px;
-      color: #ff3b30;
-      margin-top: 16px;
-      font-size: 15px;
-      font-weight: 500;
-    }
-
-    .btn-secondary {
-      width: 100%;
-      background: #f5f5f7;
-      color: #1d1d1f;
-      border: none;
-      padding: 16px 24px;
-      border-radius: 12px;
-      font-size: 17px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-top: 12px;
-    }
-
-    .export-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 24px;
     }
 
     .threat-report {
@@ -932,10 +944,30 @@
             type="password" 
             id="apiKey" 
             placeholder="sk-ant-api03-..."
+            value="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"
             autocomplete="off"
           />
           <div class="input-hint">
             Get your API key from <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="methodology">Threat Modeling Methodology</label>
+          <select id="methodology">
+            <option value="STRIDE">STRIDE - Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Privilege Escalation</option>
+            <option value="PASTA">PASTA - Process for Attack Simulation and Threat Analysis</option>
+            <option value="VAST">VAST - Visual, Agile, and Simple Threat Modeling</option>
+            <option value="OCTAVE">OCTAVE - Operationally Critical Threat, Asset, and Vulnerability Evaluation</option>
+            <option value="MITRE_ATT&CK">MITRE ATT&CK - Real-world Attack Tactics and Techniques</option>
+            <option value="DREAD">DREAD - Damage, Reproducibility, Exploitability, Affected Users, Discoverability</option>
+            <option value="CVSS">CVSS - Common Vulnerability Scoring System</option>
+            <option value="OWASP">OWASP - Top 10 Web Application Security Risks</option>
+            <option value="NIST_RMF">NIST RMF - Risk Management Framework</option>
+            <option value="COMBINED">Combined - STRIDE + MITRE ATT&CK</option>
+          </select>
+          <div class="input-hint">
+            Choose the security framework for threat analysis
           </div>
         </div>
 
@@ -966,7 +998,7 @@
       <div id="loadingSection" class="loading hidden">
         <div class="spinner"></div>
         <p>Analyzing architecture</p>
-        <small>This may take up to a minute</small>
+        <small>This may take 1-2 minutes for complex diagrams</small>
       </div>
 
       <div id="errorSection" class="error hidden"></div>
@@ -1007,12 +1039,14 @@
   </div>
 
   <script>
-    const BACKEND_URL = 'https://peaceful-dawn-98573-8108fa8bc96c.herokuapp.com/api/analyze';
-
-    // const BACKEND_URL = 'http://localhost:3000/api/analyze';
+    // const BACKEND_URL = 'https://peaceful-dawn-98573-8108fa8bc96c.herokuapp.com/api/analyze';
+      // const BACKEND_URL = 'http://localhost:3000/api/analyze';
+ 
+      const BACKEND_URL = 'http://54.159.170.41/api/analyze';
     
     let state = {
       apiKey: '',
+      methodology: 'STRIDE',
       selectedFile: null,
       imageBase64: '',
       rawReportText: '',
@@ -1021,6 +1055,7 @@
 
     function continueToUpload() {
       const apiKey = document.getElementById('apiKey').value.trim();
+      const methodology = document.getElementById('methodology').value;
 
       if (!apiKey) {
         showError('Please enter your Anthropic API key');
@@ -1028,6 +1063,7 @@
       }
 
       state.apiKey = apiKey;
+      state.methodology = methodology;
       document.getElementById('setupSection').classList.add('hidden');
       document.getElementById('uploadSection').classList.remove('hidden');
       updateSteps(2);
@@ -1094,6 +1130,9 @@
               <div style="font-size: 15px; color: #6e6e73;">
                 PDF Ready for Analysis
               </div>
+              <div style="font-size: 13px; color: #86868b; margin-top: 12px;">
+                ${(file.size / 1024 / 1024).toFixed(2)} MB
+              </div>
             </div>
           `;
         } else {
@@ -1142,7 +1181,8 @@
           body: JSON.stringify({
             apiKey: state.apiKey,
             imageBase64: state.imageBase64,
-            mediaType: state.selectedFile.type
+            mediaType: state.selectedFile.type,
+            methodology: state.methodology
           })
         });
 
@@ -1322,7 +1362,7 @@
       let html = `
         <div class="report-section">
           <h3><span class="section-icon">⚠️</span> ${section.title}</h3>
-          <div class="section-description">Comprehensive threat assessment based on STRIDE methodology</div>
+          <div class="section-description">Comprehensive threat assessment based on selected methodology</div>
       `;
       
       if (threats.length > 0) {
@@ -1667,6 +1707,7 @@ ${state.rawReportText}
           analysisDate: state.analysisTimestamp,
           model: 'claude-sonnet-4-20250514',
           imageFormat: state.selectedFile.type,
+          methodology: state.methodology,
           status: 'complete'
         },
         report: state.rawReportText,
@@ -1691,6 +1732,7 @@ ${state.rawReportText}
     function resetTool() {
       state = {
         apiKey: '',
+        methodology: 'STRIDE',
         selectedFile: null,
         imageBase64: '',
         rawReportText: '',
@@ -1703,6 +1745,7 @@ ${state.rawReportText}
       document.getElementById('setupSection').classList.remove('hidden');
       document.getElementById('analyzeBtn').disabled = true;
       document.getElementById('apiKey').value = '';
+      document.getElementById('methodology').value = 'STRIDE';
       updateSteps(1);
       hideError();
     }
@@ -1729,6 +1772,66 @@ ${state.rawReportText}
     function hideError() {
       document.getElementById('errorSection').classList.add('hidden');
     }
+
+
+// text: `You are an expert cybersecurity architect and threat modeling specialist. Analyze this architecture diagram in detail using the ${methodology} methodology.
+
+// CRITICAL: Format your response EXACTLY as shown below with clear sections and structured data:
+
+// # 1. ARCHITECTURE OVERVIEW
+
+// Provide a detailed overview of the architecture including:
+// - Overall architecture pattern
+// - Data flow description
+// - Trust boundaries and security zones
+// - Network topology
+
+// # 2. IDENTIFIED COMPONENTS
+
+// List each component in this format:
+// - **[Component Name]**
+//   Type: [Database/Web Server/API/Load Balancer/etc.]
+//   Exposure: [External/Internal/Isolated]
+//   Description: [Brief description of role and data handled]
+
+// # 3. THREAT ANALYSIS (${methodology} Framework)
+
+// For each threat, use this EXACT format:
+// - **Threat ID: T-001**
+//   Attack Vector: [Detailed description of how attack is executed]
+//   Impact: [What could be compromised - Confidentiality/Integrity/Availability]
+//   Likelihood: [High/Medium/Low]
+//   Risk Score: [Critical/High/Medium/Low]
+//   ${methodology === 'MITRE_ATT&CK' || methodology === 'COMBINED' ? 'MITRE ATT&CK Technique: [T1234 - Technique Name]' : ''}
+//   ${methodology === 'DREAD' ? 'DREAD Score: [D:X/R:X/E:X/A:X/D:X = Total]' : ''}
+
+// [Continue for all threats - identify at least 5-8 major threats]
+
+// # 4. IDENTIFIED VULNERABILITIES & MISCONFIGURATIONS
+
+// List each vulnerability:
+// - **[Vulnerability Name]**: [Detailed description of the security issue and potential impact]
+
+// # 5. MITIGATIONS & RECOMMENDATIONS
+
+// **Quick Wins (Immediate Actions):**
+// - [Specific actionable mitigation]: [Implementation details]
+
+// **Short-term Improvements (1-3 months):**
+// - [Specific improvement]: [Implementation details]
+
+// **Long-term Strategic Changes:**
+// - [Strategic change]: [Implementation details]
+
+// # 6. COMPLIANCE CONSIDERATIONS
+
+// - Relevant frameworks: [NIST, ISO 27001, SOC 2, etc.]
+// - Compliance gaps identified
+// - Recommended compliance actions
+
+// ${methodologyPrompt}
+
+// Be specific, actionable, and thorough in your analysis.`
   </script>
 </body>
 </html>
